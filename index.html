@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>باني الوثائق المرجعية | OSHWA-EG</title>
+    <!-- الخطوط -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <!-- مكتبة الأيقونات -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Markdown & Syntax Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+
+    <!-- التنسيقات الأساسية -->
+    <link rel="stylesheet" href="css/main.css?v=2">
+</head>
+
+<body>
+
+    <!-- الشريط العلوي والتمرير -->
+    <header class="top-header">
+        <div class="header-brand">
+            <h1><i data-lucide="book-open"></i> باني الوثائق | OSHWA-EG<span id="headerProjectCode"
+                    style="font-size:1.1rem; color:var(--text-muted); margin-right:8px; font-weight:600; font-family:'Fira Code', monospace; padding-top:4px;"></span>
+            </h1>
+            <span class="subtitle">المسودة النشطة <span class="status-badge" id="saveStatus">محفوظ</span></span>
+
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 10px;"></div>
+
+            <select class="theme-selector" id="themeSelect" onchange="changeTheme(this.value)">
+                <option value="theme-builder">التصميم الكلاسيكي (الأصلي)</option>
+                <option value="theme-charter">تصميم الميثاق (نمط GitHub)</option>
+            </select>
+
+            <button class="btn btn-outline" onclick="openSettingsModal()"
+                style="padding: 4px 10px; font-size: 0.8rem; height: 32px;"><i data-lucide="settings"
+                    style="width:14px;"></i> إعدادات الوثيقة العامة</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-ghost" title="إنشاء مستند جديد"
+                onclick="if(confirm('هل أنت متأكد؟ سيتم حذف المسودة الحالية وبدء مستند فارغ.')) { createNewDocument(); }"><i
+                    data-lucide="file-plus"></i></button>
+            <label class="btn btn-ghost" title="استيراد مسودة (JSON)" style="margin:0;"><i
+                    data-lucide="upload"></i><input type="file" onchange="importJSON(event)" accept=".json"
+                    style="display:none;"></label>
+            <button class="btn btn-ghost" title="تحميل المسودة (JSON)" onclick="exportJSON()"><i
+                    data-lucide="save"></i></button>
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 10px;"></div>
+            <!-- زر التصدير البسيط السابق -->
+            <button class="btn btn-primary" onclick="exportHTML()"><i data-lucide="download"></i> <span
+                    style="margin-right:5px;">تصدير HTML</span></button>
+        </div>
+    </header>
+
+    <!-- مكان إطار المعاينة -->
+    <div class="preview-frame-container">
+        <iframe id="previewFrame" title="معاينة المستند"></iframe>
+    </div>
+
+    <!-- نافذة إعدادات المشروع (Project UID Meta Data) -->
+    <div class="modal-overlay" id="settingsModal" onclick="closeSettingsModal()">
+        <div class="settings-modal" onclick="event.stopPropagation()">
+            <h2><i data-lucide="settings"></i> خصائص التكويد (Project UID)</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:-10px;">أدخل كود المشروع القياسي (PLM) بناءً
+                على ميثاق OSHWA-EG ليظهر في الوثيقة.</p>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>المنظمة (ORG)</label>
+                    <select id="modalORG"
+                        style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-top:5px; font-family:inherit;"
+                        dir="rtl"></select>
+                    <input type="text" id="modalOrgCustom" placeholder="كود مخصص..."
+                        style="display:none; margin-top:5px; font-size:0.85rem;" dir="ltr">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>المجال (DOM)</label>
+                    <select id="modalDOM"
+                        style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-top:5px; font-family:inherit;"
+                        dir="rtl"></select>
+                    <input type="text" id="modalDomCustom" placeholder="كود مخصص..."
+                        style="display:none; margin-top:5px; font-size:0.85rem;" dir="ltr">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>الرقم (ID)</label>
+                    <input type="text" id="modalID" placeholder="مثال: 001" dir="ltr">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>نوع الإصدار (Status/Type)</label>
+                    <select id="modalStatusSelect"
+                        style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-top:5px; font-family:inherit;"
+                        dir="rtl"></select>
+                    <input type="text" id="modalStatus" placeholder="مثال: v1.0.0"
+                        style="margin-top:5px; font-size:0.85rem;" dir="ltr" title="إذا أردت وضع إصدار مخصص (v1.2)">
+                </div>
+            </div>
+            <div class="form-group"
+                style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+                <label>رابط الشعار (Logo URL)</label>
+                <input type="text" id="modalLogoUrl" placeholder="رابط صورة الشعار للناف بار (اختياري)..." dir="ltr">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>أيقونة العلامة (Lucide)</label>
+                    <input type="text" id="modalBrandIcon" placeholder="مثال: cpu" dir="ltr">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>لون علامة المشروع</label>
+                    <select id="modalVersionClass"
+                        style="width:100%; padding:8px; border-radius:4px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); margin-top:5px; font-family:inherit;">
+                        <option value="tag-copper">نحاسي (افتراضي)</option>
+                        <option value="tag-green">أخضر (معتمد)</option>
+                        <option value="tag-blue">أزرق (مراجعة)</option>
+                        <option value="tag-red">أحمر (مرفوض)</option>
+                        <option value="tag-gray">رمادي (مسودة)</option>
+                    </select>
+                </div>
+            </div>
+            <div
+                style="display:flex; gap:10px; margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>عنوان محركات البحث (SEO Title)</label>
+                    <input type="text" id="modalSeoTitle" placeholder="مثال: لوحة تحكم المحركات...">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>وصف محركات البحث (SEO Desc)</label>
+                    <input type="text" id="modalSeoDesc" placeholder="وصف قصير للوثيقة...">
+                </div>
+            </div>
+            <div class="form-group"
+                style="margin-top:10px; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius:4px; display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="modalAutoNum" style="width: auto; cursor:pointer;">
+                <label for="modalAutoNum" style="margin: 0; cursor:pointer;">تفعيل الترقيم التلقائي للأقسام (مثال: 1.1,
+                    1.2)</label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeSettingsModal()">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveSettings()">حفظ وتحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- استدعاء ملفات الواجهة والسياق -->
+    <script src="js/meta-data.js?v=2"></script>
+    <script src="js/themes.js?v=2"></script>
+    <script src="js/default-template.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+    <script src="js/editor.js?v=2"></script>
+    <script src="js/exporter.js?v=2"></script>
+    <script src="js/bridge.js?v=2"></script>
+</body>
+
+</html>
